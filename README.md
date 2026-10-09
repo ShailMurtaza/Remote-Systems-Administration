@@ -1,10 +1,8 @@
 # Remote Systems Administration
 
-**Remote Systems Administration** is a Python learning project for studying how remote administration works over a network. It is built around sockets and demonstrates client–server communication, multi-client handling, message framing, encrypted traffic, and a small web control panel on top of it all.
+**Remote Systems Administration** is a Python project for demonstrating how remote administration works over a network. It is built around sockets and demonstrates client–server communication, multi-client handling, message framing, encrypted traffic, and a small web control panel on top of it all.
 
-> **Educational use only.** Run this only on machines and networks you own or have explicit permission to administer. Unauthorized access to systems is illegal.
-
-Created by **Shail Murtaza**. Current version: **Remote Systems Administration GUI 5.2**.
+Created by **Shail Murtaza**.
 
 ---
 
