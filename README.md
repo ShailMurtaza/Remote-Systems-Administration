@@ -1,10 +1,10 @@
 # Remote Systems Administration
 
-**Remote Systems Administration** (formerly known as Nasura) is a Python learning project for studying how remote administration works over a network. It is built around sockets and demonstrates client–server communication, multi-client handling, message framing, encrypted traffic, and a small web control panel on top of it all.
+**Remote Systems Administration** is a Python learning project for studying how remote administration works over a network. It is built around sockets and demonstrates client–server communication, multi-client handling, message framing, encrypted traffic, and a small web control panel on top of it all.
 
 > **Educational use only.** Run this only on machines and networks you own or have explicit permission to administer. Unauthorized access to systems is illegal.
 
-Created by **Shail Murtaza**. Current version: **Remote Systems Administration GUI 5.2** (formerly Nasura GUI 5.2).
+Created by **Shail Murtaza**. Current version: **Remote Systems Administration GUI 5.2**.
 
 ---
 
@@ -162,6 +162,4 @@ This repo is useful for practicing:
 
 ---
 
-## Project history
 
-Earlier revisions of this repo also shipped a single-file CLI variant and a plaintext (unencrypted) build for comparison. Both were removed; the encrypted GUI build above is the only version maintained now, kept at the repository root.
